@@ -84,7 +84,7 @@
       font-weight: 600;
     }
 
-    input {
+    input, select {
       width: 100%;
       padding: 12px 14px;
       border-radius: 8px;
@@ -96,10 +96,15 @@
       transition: all 0.2s ease;
     }
 
-    input:focus {
+    input:focus, select:focus {
       outline: none;
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(0, 51, 160, 0.3);
+    }
+
+    select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .btn {
@@ -228,7 +233,7 @@
     <div class="brand-subtitle">trabajando con buena energía</div>
   </div>
 
-  <!-- PANTALLA 1: REGISTRO/LOGIN -->
+  <!-- PANTALLA 1: REGISTRO/LOGIN CON PROCESOS -->
   <div id="login-screen">
     <form id="login-form">
       <div class="form-group">
@@ -237,13 +242,17 @@
       </div>
 
       <div class="form-group">
-        <label for="area">Área</label>
-        <input type="text" id="area" placeholder="Ej. Operaciones, TI, Gestión Humana" required autocomplete="off">
+        <label for="proceso">Proceso</label>
+        <select id="proceso" required>
+          <option value="" disabled selected>Seleccione un proceso...</option>
+        </select>
       </div>
 
       <div class="form-group">
-        <label for="subarea">Subárea / Cargo</label>
-        <input type="text" id="subarea" placeholder="Ej. Mantenimiento, Desarrollo" required autocomplete="off">
+        <label for="subproceso">Subproceso</label>
+        <select id="subproceso" disabled required>
+          <option value="" disabled selected>Seleccione primero un proceso...</option>
+        </select>
       </div>
 
       <button type="submit" class="btn" id="start-btn">Iniciar Desafío</button>
@@ -255,13 +264,11 @@
     <div class="clue" id="clue">Cargando pista...</div>
 
     <svg id="svg-container" viewBox="0 0 100 100">
-      <!-- Estructura del ahorcado -->
       <line x1="10" y1="95" x2="90" y2="95" />
       <line x1="30" y1="95" x2="30" y2="5" />
       <line x1="30" y1="5" x2="70" y2="5" />
       <line x1="70" y1="5" x2="70" y2="20" />
 
-      <!-- Partes del monigote (6 errores permitidos) -->
       <circle cx="70" cy="28" r="8" class="figure-part" />
       <line x1="70" y1="36" x2="70" y2="60" class="figure-part" />
       <line x1="70" y1="45" x2="55" y2="55" class="figure-part" />
@@ -283,7 +290,71 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2bnVheXFsZmFhYWd3eGd4bXNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODM0ODUsImV4cCI6MjEwMDQ1OTQ4NX0.0C43m8BmhxFDZ5oqKCoUwASWYl6rG67-JrieiMLTVMs';
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // BASE DE DATOS LOCAL DE PALABRAS
+  // ESTRUCTURA ORGANIZACIONAL DE PROCESOS Y SUBPROCESOS
+  const procesosData = [
+    {n:"Alumbrado Público", h:53, s:["Atención al Usuario","Iluminación","Compras AP","SIG","Logística AP","Medio Ambiente"]},
+    {n:"AOM", h:null, s:[]},
+    {n:"Auditoría", h:3, s:[]},
+    {n:"Calidad", h:3, s:[]},
+    {n:"Contabilidad", h:9, s:[]},
+    {n:"Cumplimiento", h:1, s:[]},
+    {n:"Finanzas", h:7, s:[]},
+    {n:"Gerencia Administrativa", h:1, s:[]},
+    {n:"Gerencia General", h:2, s:[]},
+    {n:"Gerencia Suministros y Proyectos", h:1, s:[]},
+    {n:"Gestión Administrativa", h:15, s:["Servicios Generales","Activos Fijos","Gestión documental","Sistemas","Mantenimiento","Administrativo"]},
+    {n:"Gestión Humana", h:10, s:["Gestión Humana","Seguridad y Salud en el Trabajo","Nómina"]},
+    {n:"Jurídico", h:4, s:[]},
+    {n:"Proyectos", h:31, s:["Proyectos Planeación","Proyectos Ejecución","Proyectos Cierre","Proyectos Administrativo"]},
+    {n:"Suministros", h:21, s:["Compras Suministros","Logística Suministros","Cartera","Ventas"]}
+  ];
+
+  // INICIALIZACIÓN DE SELECTORES DINÁMICOS
+  const procesoSelect = document.getElementById('proceso');
+  const subprocesoSelect = document.getElementById('subproceso');
+
+  // Cargar lista de Procesos
+  procesosData.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.n;
+    opt.textContent = p.n;
+    procesoSelect.appendChild(opt);
+  });
+
+  // Manejar cambio en Procesos para filtrar Subprocesos
+  procesoSelect.addEventListener('change', (e) => {
+    const selectedName = e.target.value;
+    const procesoObj = procesosData.find(p => p.n === selectedName);
+
+    subprocesoSelect.innerHTML = '';
+
+    if (procesoObj && procesoObj.s && procesoObj.s.length > 0) {
+      subprocesoSelect.disabled = false;
+      
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = "";
+      defaultOpt.disabled = true;
+      defaultOpt.selected = true;
+      defaultOpt.textContent = "Seleccione un subproceso...";
+      subprocesoSelect.appendChild(defaultOpt);
+
+      procesoObj.s.forEach(sub => {
+        const opt = document.createElement('option');
+        opt.value = sub;
+        opt.textContent = sub;
+        subprocesoSelect.appendChild(opt);
+      });
+    } else {
+      subprocesoSelect.disabled = false;
+      const opt = document.createElement('option');
+      opt.value = "N/A";
+      opt.textContent = "Sin subprocesos aplicables";
+      opt.selected = true;
+      subprocesoSelect.appendChild(opt);
+    }
+  });
+
+  // DICCIONARIO CORPORATIVO
   const dictionary = [
     { word: "ENERGIA", clue: "Capacidad para realizar un trabajo o transformar el entorno." },
     { word: "SEGURIDAD", clue: "Condición indispensable para preservar la integridad operativa." },
@@ -303,17 +374,17 @@
     btn.disabled = true;
 
     const nombre = document.getElementById('nombre').value.trim();
-    const area = document.getElementById('area').value.trim();
-    const subarea = document.getElementById('subarea').value.trim();
+    const proceso = procesoSelect.value;
+    const subproceso = subprocesoSelect.value;
 
     try {
-      // Inserción inicial en la tabla 'juego_ahorcado'
+      // Inserción en la tabla 'juego_ahorcado' mapeando proceso/subproceso
       const { data, error } = await supabaseClient
         .from('juego_ahorcado')
         .insert([{ 
           nombre: nombre, 
-          area: area, 
-          subarea: subarea, 
+          area: proceso, 
+          subarea: subproceso, 
           estado: 'Iniciado' 
         }])
         .select();
@@ -324,7 +395,7 @@
         currentRecordId = data[0].id;
       }
 
-      // Despliegue de la interfaz de juego
+      // Transición al juego
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('game-screen').style.display = 'block';
       initGame();
@@ -357,7 +428,6 @@
       <div class="letter-slot">${guessed.includes(letter) ? letter : ''}</div>
     `).join('');
 
-    // Condición de victoria
     if (!selected.word.split('').some(l => !guessed.includes(l))) {
       document.getElementById('status').innerText = "¡Excelente! Desafío superado.";
       document.getElementById('status').style.color = "var(--success)";
@@ -391,7 +461,6 @@
         parts[errors].style.display = 'block';
         errors++;
       }
-      // Condición de derrota
       if (errors === parts.length) {
         document.getElementById('status').innerText = `Fallo crítico. La palabra era: ${selected.word}`;
         document.getElementById('status').style.color = "var(--error)";
@@ -406,7 +475,6 @@
     document.querySelectorAll('.key').forEach(btn => btn.disabled = true);
   }
 
-  // ACTUALIZACIÓN DEL ESTADO EN SUPABASE EN TIEMPO REAL
   async function updateDatabase(finalState) {
     if (!currentRecordId) return;
     try {
