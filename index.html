@@ -43,7 +43,6 @@
       border-top: 6px solid var(--primary);
     }
 
-    /* Branding Electroingeniería */
     .brand-header {
       margin-bottom: 2rem;
     }
@@ -70,7 +69,6 @@
       font-weight: 600;
     }
 
-    /* Formularios */
     .form-group {
       margin-bottom: 1.2rem;
       text-align: left;
@@ -129,8 +127,16 @@
       transform: scale(0.99);
     }
 
-    /* Pantalla del juego */
-    #game-screen { display: none; }
+    #game-screen, #end-screen { display: none; }
+
+    .game-progress {
+      font-size: 0.85rem;
+      color: var(--yellow);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
 
     .clue {
       color: var(--muted);
@@ -222,18 +228,32 @@
       font-weight: 700;
       font-size: 1.1rem;
     }
+
+    .summary-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .summary-score {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--yellow);
+      margin: 0.5rem 0;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <!-- Cabecera Institucional -->
   <div class="brand-header">
     <h1 class="brand-title">electro<span>ingeniería</span></h1>
     <div class="brand-subtitle">trabajando con buena energía</div>
   </div>
 
-  <!-- PANTALLA 1: REGISTRO CON PROCESOS -->
+  <!-- PANTALLA 1: REGISTRO -->
   <div id="login-screen">
     <form id="login-form">
       <div class="form-group">
@@ -259,8 +279,9 @@
     </form>
   </div>
 
-  <!-- PANTALLA 2: LÓGICA DEL JUEGO -->
+  <!-- PANTALLA 2: JUEGO -->
   <div id="game-screen">
+    <div class="game-progress" id="game-progress">Palabra 1 de 5</div>
     <div class="clue" id="clue">Cargando pista...</div>
 
     <svg id="svg-container" viewBox="0 0 100 100">
@@ -280,49 +301,41 @@
     <div class="word-display" id="word-display"></div>
     <div class="keyboard" id="keyboard"></div>
     <div class="status" id="status"></div>
-    <button class="btn" id="reset-btn" onclick="initGame()" style="display:none; margin-top: 15px;">Siguiente Palabra</button>
+    <button class="btn" id="next-btn" onclick="nextWord()" style="display:none; margin-top: 15px;">Siguiente Palabra</button>
+  </div>
+
+  <!-- PANTALLA 3: FIN DEL JUEGO -->
+  <div id="end-screen">
+    <h2>¡Desafío Finalizado!</h2>
+    <p style="color: var(--muted);">Has completado la evaluación corporativa.</p>
+    
+    <div class="summary-card">
+      <div>Aciertos Totales</div>
+      <div class="summary-score" id="final-score">0 / 0</div>
+      <div id="final-message" style="font-size: 0.9rem; color: var(--muted);"></div>
+    </div>
+
+    <button class="btn" onclick="location.reload()">Registrar Nuevo Usuario</button>
   </div>
 </div>
 
 <script>
-  // CREDENCIALES DE SUPABASE
   const SUPABASE_URL = 'https://qvnuayqlfaaagwxgxmsc.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2bnVheXFsZmFhYWd3eGd4bXNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODM0ODUsImV4cCI6MjEwMDQ1OTQ4NX0.0C43m8BmhxFDZ5oqKCoUwASWYl6rG67-JrieiMLTVMs';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2bnVheXFsZmFhYWd3eGd4mscIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODM0ODUsImV4cCI6MjEwMDQ1OTQ4NX0.0C43m8BmhxFDZ5oqKCoUwASWYl6rG67-JrieiMLTVMs';
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ESTRUCTURA ORGANIZACIONAL DE 6 PROCESOS PRINCIPALES
   const procesosData = [
-    {
-      n: "Gestión Humana", 
-      s: ["Gestión Humana", "Seguridad y Salud en el Trabajo", "Nómina"]
-    },
-    {
-      n: "Administración", 
-      s: ["Servicios Generales", "Activos Fijos", "Gestión Documental", "Sistemas", "Mantenimiento", "Administrativo"]
-    },
-    {
-      n: "Mejora Continua", 
-      s: ["Auditoría", "Calidad", "Cumplimiento"]
-    },
-    {
-      n: "Suministros", 
-      s: ["Compras Suministros", "Logística Suministros", "Cartera", "Ventas"]
-    },
-    {
-      n: "Alumbrado Público", 
-      s: ["Atención al Usuario", "Iluminación", "Compras AP", "SIG", "Logística AP", "Medio Ambiente"]
-    },
-    {
-      n: "Proyectos", 
-      s: ["Proyectos Planeación", "Proyectos Ejecución", "Proyectos Cierre", "Proyectos Administrativo"]
-    }
+    { n: "Gestión Humana", s: ["Gestión Humana", "Seguridad y Salud en el Trabajo", "Nómina"] },
+    { n: "Administración", s: ["Servicios Generales", "Activos Fijos", "Gestión Documental", "Sistemas", "Mantenimiento", "Administrativo"] },
+    { n: "Mejora Continua", s: ["Auditoría", "Calidad", "Cumplimiento"] },
+    { n: "Suministros", s: ["Compras Suministros", "Logística Suministros", "Cartera", "Ventas"] },
+    { n: "Alumbrado Público", s: ["Atención al Usuario", "Iluminación", "Compras AP", "SIG", "Logística AP", "Medio Ambiente"] },
+    { n: "Proyectos", s: ["Proyectos Planeación", "Proyectos Ejecución", "Proyectos Cierre", "Proyectos Administrativo"] }
   ];
 
-  // INICIALIZACIÓN DE SELECTORES
   const procesoSelect = document.getElementById('proceso');
   const subprocesoSelect = document.getElementById('subproceso');
 
-  // Poblar la lista desplegable de procesos
   procesosData.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.n;
@@ -330,7 +343,6 @@
     procesoSelect.appendChild(opt);
   });
 
-  // Filtrar subprocesos según la selección
   procesoSelect.addEventListener('change', (e) => {
     const selectedName = e.target.value;
     const procesoObj = procesosData.find(p => p.n === selectedName);
@@ -339,7 +351,6 @@
 
     if (procesoObj && procesoObj.s && procesoObj.s.length > 0) {
       subprocesoSelect.disabled = false;
-      
       const defaultOpt = document.createElement('option');
       defaultOpt.value = "";
       defaultOpt.disabled = true;
@@ -363,7 +374,6 @@
     }
   });
 
-  // DICCIONARIO CORPORATIVO
   const dictionary = [
     { word: "ENERGIA", clue: "Capacidad para realizar un trabajo o transformar el entorno." },
     { word: "SEGURIDAD", clue: "Condición indispensable para preservar la integridad operativa." },
@@ -373,9 +383,11 @@
   ];
 
   let currentRecordId = null;
+  let remainingIndices = [];
+  let currentRound = 0;
+  let score = 0;
   let selected, guessed, errors, parts;
 
-  // CAPTURA DE REGISTRO E INSERCIÓN EN SUPABASE
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('start-btn');
@@ -393,7 +405,7 @@
           nombre: nombre, 
           area: proceso, 
           subarea: subproceso, 
-          estado: 'Iniciado' 
+          estado: 'En Progreso' 
         }])
         .select();
 
@@ -403,27 +415,44 @@
         currentRecordId = data[0].id;
       }
 
+      // Inicializar lista de índices no jugados
+      remainingIndices = dictionary.map((_, index) => index);
+      currentRound = 0;
+      score = 0;
+
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('game-screen').style.display = 'block';
-      initGame();
+      
+      nextWord();
 
     } catch (err) {
-      alert("Fallo de comunicación con la base de datos: " + err.message);
+      alert("Error con la base de datos: " + err.message);
       btn.innerText = "Iniciar Desafío";
       btn.disabled = false;
     }
   });
 
-  function initGame() {
-    selected = dictionary[Math.floor(Math.random() * dictionary.length)];
+  function nextWord() {
+    if (remainingIndices.length === 0) {
+      finishGame();
+      return;
+    }
+
+    currentRound++;
+    // Extraer un índice al azar sin reemplazo
+    const randomIndex = Math.floor(Math.random() * remainingIndices.length);
+    const selectedIndex = remainingIndices.splice(randomIndex, 1)[0];
+    
+    selected = dictionary[selectedIndex];
     guessed = [];
     errors = 0;
     parts = document.querySelectorAll('.figure-part');
     
     parts.forEach(p => p.style.display = 'none');
+    document.getElementById('game-progress').innerText = `Palabra ${currentRound} de ${dictionary.length}`;
     document.getElementById('clue').innerText = `Pista: "${selected.clue}"`;
     document.getElementById('status').innerText = '';
-    document.getElementById('reset-btn').style.display = 'none';
+    document.getElementById('next-btn').style.display = 'none';
 
     renderWord();
     renderKeyboard();
@@ -436,11 +465,11 @@
     `).join('');
 
     if (!selected.word.split('').some(l => !guessed.includes(l))) {
-      document.getElementById('status').innerText = "¡Excelente! Desafío superado.";
+      score++;
+      document.getElementById('status').innerText = "¡Excelente! Palabra superada.";
       document.getElementById('status').style.color = "var(--success)";
       disableKeyboard();
-      updateDatabase('Completado');
-      document.getElementById('reset-btn').style.display = 'block';
+      showNextButton();
     }
   }
 
@@ -472,20 +501,29 @@
         errors++;
       }
       if (errors === parts.length) {
-        document.getElementById('status').innerText = `Fallo crítico. La palabra era: ${selected.word}`;
+        document.getElementById('status').innerText = `Fallo. La palabra era: ${selected.word}`;
         document.getElementById('status').style.color = "var(--error)";
         disableKeyboard();
-        updateDatabase('Fallado');
-        document.getElementById('reset-btn').style.display = 'block';
+        showNextButton();
       }
     }
+  }
+
+  function showNextButton() {
+    const btn = document.getElementById('next-btn');
+    if (remainingIndices.length === 0) {
+      btn.innerText = "Ver Resumen Final";
+    } else {
+      btn.innerText = "Siguiente Palabra";
+    }
+    btn.style.display = 'block';
   }
 
   function disableKeyboard() {
     document.querySelectorAll('.key').forEach(btn => btn.disabled = true);
   }
 
-  // SOPORTE PARA TECLADO FÍSICO DE PC
+  // SOPORTE TECLADO FÍSICO
   document.addEventListener('keydown', (e) => {
     const gameScreen = document.getElementById('game-screen');
     if (getComputedStyle(gameScreen).display === 'none') return;
@@ -500,19 +538,32 @@
     }
   });
 
-  async function updateDatabase(finalState) {
-    if (!currentRecordId) return;
-    try {
-      await supabaseClient
-        .from('juego_ahorcado')
-        .update({ 
-          estado: finalState, 
-          palabra: selected.word, 
-          errores: errors 
-        })
-        .eq('id', currentRecordId);
-    } catch (e) {
-      console.error("Error al sincronizar con Supabase:", e);
+  async function finishGame() {
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('end-screen').style.display = 'block';
+
+    document.getElementById('final-score').innerText = `${score} / ${dictionary.length}`;
+    
+    let msg = "";
+    if (score === dictionary.length) msg = "¡Rendimiento perfecto! Excelente dominio.";
+    else if (score >= 3) msg = "Buen desempeño general.";
+    else msg = "Se sugiere repasar los conceptos clave.";
+    
+    document.getElementById('final-message').innerText = msg;
+
+    // Actualización de estado en Supabase
+    if (currentRecordId) {
+      try {
+        await supabaseClient
+          .from('juego_ahorcado')
+          .update({ 
+            estado: 'Finalizado',
+            errores: score 
+          })
+          .eq('id', currentRecordId);
+      } catch (e) {
+        console.error("Error al actualizar estado final:", e);
+      }
     }
   }
 </script>
