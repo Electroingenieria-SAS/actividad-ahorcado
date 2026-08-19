@@ -374,12 +374,33 @@
     }
   });
 
+  // NUEVO DICCIONARIO CORPORATIVO
   const dictionary = [
-    { word: "ENERGIA", clue: "Capacidad para realizar un trabajo o transformar el entorno." },
-    { word: "SEGURIDAD", clue: "Condición indispensable para preservar la integridad operativa." },
-    { word: "EFICIENCIA", clue: "Logro de los objetivos maximizando los recursos disponibles." },
-    { word: "INNOVACION", clue: "Transformación de ideas en valor tangible para la organización." },
-    { word: "INGENIERIA", clue: "Aplicación sistemática de principios científicos a la solución técnica." }
+    { 
+      word: "BUK", 
+      type: "Herramienta", 
+      clue: "Plataforma implementada para gestionar procesos relacionados con los colaboradores." 
+    },
+    { 
+      word: "EXATI", 
+      type: "Software", 
+      clue: "Herramienta que centraliza y optimiza la gestión del alumbrado público." 
+    },
+    { 
+      word: "TRAZABILIDAD", 
+      type: "Concepto", 
+      clue: "Permite hacer seguimiento a cada etapa de un proceso." 
+    },
+    { 
+      word: "ESTANDARIZACION", 
+      type: "Concepto", 
+      clue: "Busca establecer formas organizadas y comunes de gestionar los procesos." 
+    },
+    { 
+      word: "PREVENCION", 
+      type: "Concepto", 
+      clue: "Busca anticiparse a los riesgos y fortalecer la seguridad." 
+    }
   ];
 
   let currentRecordId = null;
@@ -415,7 +436,6 @@
         currentRecordId = data[0].id;
       }
 
-      // Inicializar lista de índices no jugados
       remainingIndices = dictionary.map((_, index) => index);
       currentRound = 0;
       score = 0;
@@ -439,7 +459,6 @@
     }
 
     currentRound++;
-    // Extraer un índice al azar sin reemplazo
     const randomIndex = Math.floor(Math.random() * remainingIndices.length);
     const selectedIndex = remainingIndices.splice(randomIndex, 1)[0];
     
@@ -450,7 +469,7 @@
     
     parts.forEach(p => p.style.display = 'none');
     document.getElementById('game-progress').innerText = `Palabra ${currentRound} de ${dictionary.length}`;
-    document.getElementById('clue').innerText = `Pista: "${selected.clue}"`;
+    document.getElementById('clue').innerText = `[${selected.type}] Pista: "${selected.clue}"`;
     document.getElementById('status').innerText = '';
     document.getElementById('next-btn').style.display = 'none';
 
@@ -523,7 +542,6 @@
     document.querySelectorAll('.key').forEach(btn => btn.disabled = true);
   }
 
-  // SOPORTE TECLADO FÍSICO
   document.addEventListener('keydown', (e) => {
     const gameScreen = document.getElementById('game-screen');
     if (getComputedStyle(gameScreen).display === 'none') return;
@@ -545,13 +563,12 @@
     document.getElementById('final-score').innerText = `${score} / ${dictionary.length}`;
     
     let msg = "";
-    if (score === dictionary.length) msg = "¡Rendimiento perfecto! Excelente dominio.";
+    if (score === dictionary.length) msg = "¡Rendimiento perfecto! Excelente dominio corporativo.";
     else if (score >= 3) msg = "Buen desempeño general.";
-    else msg = "Se sugiere repasar los conceptos clave.";
+    else msg = "Se sugiere repasar las herramientas y conceptos institucionales.";
     
     document.getElementById('final-message').innerText = msg;
 
-    // Actualización de estado en Supabase
     if (currentRecordId) {
       try {
         await supabaseClient
